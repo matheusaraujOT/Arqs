@@ -5,7 +5,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.math.BigDecimal;
-import java.util.Date;
 import java.util.logging.Logger;
 import javax.inject.Inject;
 import org.jboss.arquillian.container.test.api.Deployment;
@@ -18,8 +17,8 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
-import br.unibh.loja.entidades.Cliente;
 import br.unibh.loja.entidades.Categoria;
+import br.unibh.loja.entidades.Cliente;
 import br.unibh.loja.entidades.Produto;
 import br.unibh.loja.util.Resources;
 
@@ -30,7 +29,7 @@ public class TesteServicoProduto {
 	public static Archive<?> createTestArchive() {
 		// Cria o pacote que vai ser instalado no Wildfly para realizacao dos testes
 		return ShrinkWrap.create(WebArchive.class, "testeloja.war")
-				.addClasses(Cliente.class, Produto.class, Categoria.class, Resources.class, DAO.class,
+				.addClasses(Categoria.class, Cliente.class, Produto.class, Resources.class, DAO.class,
 						ServicoProduto.class, ServicoCategoria.class)
 				.addAsResource("META-INF/persistence.xml", "META-INF/persistence.xml")
 				.addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
@@ -39,33 +38,30 @@ public class TesteServicoProduto {
 	// Realiza as injecoes com CDI
 	@Inject
 	private Logger log;
-	
-	@Inject
-	private ServicoCategoria scat;
-	
 	@Inject
 	private ServicoProduto sc;
+	@Inject
+	private ServicoCategoria scat;
 
 	@Test
-	public void teste00_inserirSemErro() throws Exception {
+	public void teste00_inserirCategoria() throws Exception {
 		log.info("============> Iniciando o teste " + Thread.currentThread().getStackTrace()[1].getMethodName());
-		Categoria o = new Categoria(null, "categoria");
-		scat.insert(o);
-		Categoria aux = (Categoria) scat.findByName("categoria").get(0);
+		Categoria c1 = new Categoria(1L, "Roupa");
+		scat.insert(c1);
+		Categoria aux = (Categoria) scat.findByName("Roupa").get(0);
 		assertNotNull(aux);
 		log.info("============> Finalizando o teste " + Thread.currentThread().getStackTrace()[1].getMethodName());
 	}
-	
-	
+
 	@Test
 	public void teste01_inserirSemErro() throws Exception {
 		log.info("============> Iniciando o teste " + Thread.currentThread().getStackTrace()[1].getMethodName());
-		BigDecimal b1 = new BigDecimal(10000);
-		Categoria c1 = (Categoria) scat.findByName("categoria").get(0);
-		Produto o = new Produto(null, "carro", "gol", c1, b1, "vw");
-		
+		Categoria c1 = (Categoria) scat.findByName("Roupa").get(0);
+		BigDecimal preco = new BigDecimal(30.00);
+
+		Produto o = new Produto(1L, "Blusa", "cor azul", c1, preco, "Lacoste");
 		sc.insert(o);
-		Produto aux = (Produto) sc.findByName("carro").get(0);
+		Produto aux = (Produto) sc.findByName("Blusa").get(0);
 		assertNotNull(aux);
 		log.info("============> Finalizando o teste " + Thread.currentThread().getStackTrace()[1].getMethodName());
 	}
@@ -73,15 +69,14 @@ public class TesteServicoProduto {
 	@Test
 	public void teste02_inserirComErro() throws Exception {
 		log.info("============> Iniciando o teste " + Thread.currentThread().getStackTrace()[1].getMethodName());
+		Categoria c1 = (Categoria) scat.findByName("Roupa").get(0);
+		BigDecimal preco = new BigDecimal(30.00);
+
 		try {
-			BigDecimal b1 = new BigDecimal(10000);
-			Categoria c1 = (Categoria) scat.findByName("categoria").get(0);
-			Produto o = new Produto(null, "carro", "", c1, b1, "vw");
+			Produto o = new Produto(1L, "Blusa@", "cor azul", c1, preco, "Lacoste");
 			sc.insert(o);
-			
 		} catch (Exception e) {
-			System.out.println(e.getMessage());
-			assertTrue(checkString(e, "Não pode estar em branco"));
+			assertTrue(checkString(e, "Caracteres permitidos: letras, espaços, ponto e aspas simples"));
 		}
 		log.info("============> Finalizando o teste " + Thread.currentThread().getStackTrace()[1].getMethodName());
 	}
@@ -89,10 +84,10 @@ public class TesteServicoProduto {
 	@Test
 	public void teste03_atualizar() throws Exception {
 		log.info("============> Iniciando o teste " + Thread.currentThread().getStackTrace()[1].getMethodName());
-		Produto o = (Produto) sc.findByName("carro").get(0);
-		o.setNome("carro modificado");
+		Produto o = (Produto) sc.findByName("Blusa").get(0);
+		o.setNome("Camiseta");
 		sc.update(o);
-		Produto aux = (Produto) sc.findByName("carro modificado").get(0);
+		Produto aux = (Produto) sc.findByName("Camiseta").get(0);
 		assertNotNull(aux);
 		log.info("============> Finalizando o teste " + Thread.currentThread().getStackTrace()[1].getMethodName());
 	}
@@ -100,9 +95,9 @@ public class TesteServicoProduto {
 	@Test
 	public void teste04_excluir() throws Exception {
 		log.info("============> Iniciando o teste " + Thread.currentThread().getStackTrace()[1].getMethodName());
-		Produto o = (Produto) sc.findByName("carro").get(0);
+		Produto o = (Produto) sc.findByName("Camiseta").get(0);
 		sc.delete(o);
-		assertEquals(0, sc.findByName("carro modificado").size());
+		assertEquals(0, sc.findByName("Camiseta").size());
 		log.info("============> Finalizando o teste " + Thread.currentThread().getStackTrace()[1].getMethodName());
 	}
 

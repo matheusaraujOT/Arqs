@@ -1,59 +1,67 @@
 package br.unibh.loja.negocio;
 
-import org.joda.time.DateTime;
-import org.joda.time.Days;
-import org.joda.time.Duration;
-import java.sql.Date;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
+
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
+
 import br.unibh.loja.entidades.Cliente;
 
 @Stateless
 @LocalBean
 public class ServicoCliente implements DAO<Cliente, Long> {
-	
 	@Inject
 	EntityManager em;
-	
 	@Inject
 	private Logger log;
 
 	public Cliente insert(Cliente t) throws Exception {
-		log.info("Persistindo " + t);
-		
-		DateTime hoje = new DateTime();
-		DateTime cadastro = new DateTime(t.getDataCadastro());
-		int dias = Days.daysBetween(cadastro, hoje).getDays();
-
-		if (t.getPerfil().equals("Standard") && dias < 365) {
+		if (t.getPerfil().equals("Standard")) {
+			log.info("Persistindo " + t);
 			em.persist(t);
+			return t;
 		} else {
-			throw new Exception("o cliente precisa ser criado com o perfil Standard");
+			throw new Exception("Só é permitido inserir cliente com perfil Standard");
 		}
-		return t;
 	}
 
 	public Cliente update(Cliente t) throws Exception {
-		log.info("Atualizando " + t);
+		Calendar premiumCalendar = Calendar.getInstance();
+		Calendar goldCalendar = Calendar.getInstance();
 
-		DateTime hoje = new DateTime();
-		DateTime cadastro = new DateTime(t.getDataCadastro());
-		int dias = Days.daysBetween(cadastro, hoje).getDays();
+		premiumCalendar.add(Calendar.YEAR, -1);
+		goldCalendar.add(Calendar.YEAR, -5);
 
-		if (t.getPerfil().equals("Standard") && dias < 365) {
-			em.merge(t);
-		} else if ((t.getPerfil().equals("Standard")||t.getPerfil().equals("Premium")) && (dias >= 365 &&  dias <= 5 * 365)) {
-			em.merge(t);
-		} else if ((t.getPerfil().equals("Standard")||t.getPerfil().equals("Standard")||t.getPerfil().equals("Gold") ) && (dias > 5 * 365)) {
-			em.merge(t);
-		} else {
-			throw new Exception("sdfsdfsd");
+		Date premiumDate = premiumCalendar.getTime();
+		Date goldDate = goldCalendar.getTime();
+
+		switch (t.getPerfil()) {
+		case "Gold":
+			if (t.getDataCadastro().before(goldDate)) {
+				log.info("Atualizando " + t);
+				return em.merge(t);
+			} else {
+				throw new Exception("So é permitido os perfis Standard e Premium entre 1 e 5 anos");
+			}
+		case "Premium":
+			if (t.getDataCadastro().before(premiumDate)) {
+				log.info("Atualizando " + t);
+				return em.merge(t);
+			} else {
+				throw new Exception("So é permitido os perfis Standard com menos de 1 ano");
+			}
+		case "Standard":
+			log.info("Atualizando " + t);
+			return em.merge(t);
+
+		default:
+			throw new Exception("So é permitido clientes com os perfis Standard, Premium ou Gold");
 		}
-		return t;
 	}
 
 	public void delete(Cliente t) throws Exception {
@@ -74,8 +82,20 @@ public class ServicoCliente implements DAO<Cliente, Long> {
 	}
 
 	@SuppressWarnings("unchecked")
-	public List<Cliente> findByName(String name) throws Exception {
-		log.info("Encontrando o " + name);
-		return em.createNamedQuery("Cliente.findByName").setParameter("nome", "%" + name + "%").getResultList();
+	public List<Cliente> findByLogin(String login) throws Exception {
+		log.info("Encontrando o " + login);
+		return em.createNamedQuery("Cliente.findByLogin").setParameter("login", "%" + login + "%").getResultList();
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<Cliente> findByPerfil(String perfil) throws Exception {
+		log.info("Encontrando todos com perfil " + perfil);
+		return em.createNamedQuery("Cliente.findByPerfil").setParameter("perfil", "%" + perfil + "%").getResultList();
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<Cliente> findByName(String nome) throws Exception {
+		log.info("Encontrando o " + nome);
+		return em.createNamedQuery("Cliente.findByName").setParameter("nome", "%" + nome + "%").getResultList();
 	}
 }

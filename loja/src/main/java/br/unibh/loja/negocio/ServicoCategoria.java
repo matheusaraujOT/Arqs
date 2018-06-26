@@ -11,10 +11,8 @@ import br.unibh.loja.entidades.Categoria;
 @Stateless
 @LocalBean
 public class ServicoCategoria implements DAO<Categoria, Long> {
-	
 	@Inject
 	EntityManager em;
-	
 	@Inject
 	private Logger log;
 
@@ -47,8 +45,9 @@ public class ServicoCategoria implements DAO<Categoria, Long> {
 	}
 
 	@SuppressWarnings("unchecked")
-	public List<Categoria> findByName(String name) throws Exception {
-		log.info("Encontrando o " + name);
-		return em.createNamedQuery("Categoria.findByName").setParameter("nome", "%" + name + "%").getResultList();
+	public List<Categoria> findByName(String descricao) throws Exception {
+		log.info("Encontrando o " + descricao);
+		return em.createNamedQuery("Categoria.findByName").setParameter("descricao", "%" + descricao + "%")
+				.getResultList();
 	}
 }
